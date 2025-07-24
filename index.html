@@ -446,6 +446,21 @@
                 </div>
             </div>
 
+            <!-- Elemen tersembunyi untuk cetak PDF -->
+<div id="printAreaPDF" class="p-4 hidden">
+  <div class="mb-4 text-center">
+    <img src="https://iili.io/FjF61ou.png" alt="Logo SDIT" style="height:64px; margin:auto; margin-bottom:12px;">
+    <h2 class="text-xl font-bold">SDIT Harapan Umat Karawang</h2>
+    <p class="text-sm">Jl. Pakuncen No. 01, Desa Sukaharja, Kec. Teluk Jambe Timur</p>
+    <p class="text-sm" id="monthlyTableInfoPDF"></p>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm border border-gray-300" id="monthlyAttendanceTablePDF">
+      <!-- Isi tabel akan disalin dari #monthlyAttendanceTable -->
+    </table>
+  </div>
+</div>
+
             <!-- Regular Attendance Table -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 sm:p-6">
