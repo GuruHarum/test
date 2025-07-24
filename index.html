@@ -2325,17 +2325,31 @@
         });
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'964405da514aca88',t:'MTc1MzM2NjQ1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">function downloadMonthlyPDF() {
-    const element = document.getElementById('monthlyGridTable');
-    const opt = {
-        margin:       0.3,
-        filename:     'Rekap_Absensi_Gemar_Mengaji.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
-    };
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+function downloadMonthlyPDF() {
+    const table = document.getElementById('monthlyAttendanceTable');
+    const info = document.getElementById('monthlyTableInfo')?.innerText || 'Rekap';
 
-    html2pdf().set(opt).from(element).save();
+    if (!table) {
+        alert('⚠️ Tabel rekap belum muncul! Pastikan Anda sudah memilih Guru, Kelas, dan Bulan.');
+        return;
+    }
+
+    const clonedTable = table.cloneNode(true);
+    const template = document.getElementById('printAreaPDF');
+    const container = template.cloneNode(true);
+    container.classList.remove('hidden');
+    container.querySelector('#monthlyTableInfoPDF').innerText = info;
+    container.querySelector('#monthlyAttendanceTablePDF').replaceWith(clonedTable);
+
+    html2pdf().set({
+        margin: 0.3,
+        filename: `Rekap_Absensi_${info.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+    }).from(container).save();
 }
 </script>
 </body>
