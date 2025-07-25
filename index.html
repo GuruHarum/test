@@ -425,10 +425,6 @@
                                 <span>📊</span>
                                 <span>Download Excel</span>
                             </button>
-                            <button onclick="downloadMonthlyPDF()" class="bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-red-700 transition-colors flex items-center space-x-1">
-                                <span>📄</span>
-                                <span>Download PDF</span>
-                            </button>
                             <button onclick="printMonthlyTable()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-1">
                                 <span>🖨️</span>
                                 <span>Cetak</span>
@@ -445,21 +441,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Elemen tersembunyi untuk cetak PDF -->
-<div id="printAreaPDF" class="p-4 hidden">
-  <div class="mb-4 text-center">
-    <img src="https://iili.io/FjF61ou.png" alt="Logo SDIT" style="height:64px; margin:auto; margin-bottom:12px;">
-    <h2 class="text-xl font-bold">SDIT Harapan Umat Karawang</h2>
-    <p class="text-sm">Jl. Pakuncen No. 01, Desa Sukaharja, Kec. Teluk Jambe Timur</p>
-    <p class="text-sm" id="monthlyTableInfoPDF"></p>
-  </div>
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm border border-gray-300" id="monthlyAttendanceTablePDF">
-      <!-- Isi tabel akan disalin dari #monthlyAttendanceTable -->
-    </table>
-  </div>
-</div>
 
             <!-- Regular Attendance Table -->
             <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -1457,7 +1438,28 @@
             monthDates.forEach(date => {
                 headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[30px]">${date}</th>`;
             });
-            
+
+// Total dan persentase
+const totalDays = daysInMonth;
+const percentage = ((countH / totalDays) * 100).toFixed(1);
+
+bodyHTML += `
+    <td class="px-2 py-2 text-center text-xs text-green-600 font-bold">${countH}</td>
+    <td class="px-2 py-2 text-center text-xs text-yellow-600 font-bold">${countS}</td>
+    <td class="px-2 py-2 text-center text-xs text-blue-600 font-bold">${countI}</td>
+    <td class="px-2 py-2 text-center text-xs text-red-600 font-bold">${countA}</td>
+    <td class="px-2 py-2 text-center text-xs text-purple-600 font-bold">${percentage}%</td>
+`;
+
+// Tambahan kolom total kehadiran dan persentase
+headerHTML += `
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">H</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">S</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">I</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">A</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[80px]">%</th>
+`;
+    
             headerHTML += '</tr></thead>';
             
             // Create table body
@@ -1556,6 +1558,11 @@
                     }
                     
                     let statusSymbol = '';
+let countH = 0;
+let countS = 0;
+let countI = 0;
+let countA = 0;
+
                     let cellClass = 'px-1 py-2 text-center text-xs font-semibold';
                     
                     if (attendanceRecord) {
@@ -1566,19 +1573,23 @@
                             case 'hadir':
                                 statusSymbol = 'H';
                                 cellClass += ' text-green-600 bg-green-50';
+				countH++;
                                 break;
                             case 'sakit':
                                 statusSymbol = 'S';
                                 cellClass += ' text-yellow-600 bg-yellow-50';
+				countS++;
                                 break;
                             case 'izin':
                                 statusSymbol = 'I';
                                 cellClass += ' text-blue-600 bg-blue-50';
+				countI++;
                                 break;
                             case 'alpha':
                             case '-':
                                 statusSymbol = '-';
                                 cellClass += ' text-red-600 bg-red-50';
+				countA++;
                                 break;
                             default:
                                 statusSymbol = '';
@@ -2339,33 +2350,5 @@
             scheduleAbsentDataCheck();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'964405da514aca88',t:'MTc1MzM2NjQ1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-function downloadMonthlyPDF() {
-    const table = document.getElementById('monthlyAttendanceTable');
-    const info = document.getElementById('monthlyTableInfo')?.innerText || 'Rekap';
-
-    if (!table) {
-        alert('⚠️ Tabel rekap belum muncul! Pastikan Anda sudah memilih Guru, Kelas, dan Bulan.');
-        return;
-    }
-
-    const clonedTable = table.cloneNode(true);
-    const template = document.getElementById('printAreaPDF');
-    const container = template.cloneNode(true);
-    container.classList.remove('hidden');
-    container.querySelector('#monthlyTableInfoPDF').innerText = info;
-    container.querySelector('#monthlyAttendanceTablePDF').replaceWith(clonedTable);
-
-    html2pdf().set({
-        margin: 0.3,
-        filename: `Rekap_Absensi_${info.replace(/[^a-z0-9]/gi, '_')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-    }).from(container).save();
-}
-</script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9644f19c156eb29b',t:'MTc1MzM3NjExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
