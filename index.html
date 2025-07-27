@@ -1664,9 +1664,12 @@
                 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIfruSjIM_EvdnLqbPg-ghFJNmojuV36CiGgEcYYoIk-9vqBdBpu_ejBZqi-ZmXuts/exec';
                 
                 // Get current filter values
-                const teacherFilter = document.getElementById('filterTeacher').value;
-                const classFilter = document.getElementById('filterClass').value;
-                const monthFilter = document.getElementById('filterMonth').value;
+                const teacherFilter = document.getElementById('filterTeacher')?.value || '';
+                const classNumber = document.getElementById('filterClassNumber')?.value || '';
+                const classDetail = document.getElementById('filterClassDetail')?.value || '';
+                const monthFilter = document.getElementById('filterMonth')?.value || '';
+                // Gunakan classDetail jika ada, else classNumber
+                const classFilter = classDetail || classNumber;
                 
                 // Prepare filtered data for sync
                 let filteredRecords = allAttendanceRecords;
