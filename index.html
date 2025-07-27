@@ -553,119 +553,200 @@
             }
         }
 
-        // --- Helper untuk mengambil kelas utama (angka saja) ---
-function getMainClasses() {
-    // Ambil kelas dari data siswa, regex: awal angka (misal: "1", "2", "3")
-    const mainClasses = studentsData
-        .map(s => (s.kelas || s.class || s.Kelas || s.Class || s['Kelas'] || s['kelas'] || s['class'] || s['Class'] || ''))
-        .map(k => String(k).trim())
-        .filter(k => /^\d+/.test(k))
-        .map(k => k.match(/^\d+/)[0])
-        .filter((v, i, a) => v && a.indexOf(v) === i)
-        .sort((a, b) => a - b);
-    return mainClasses;
-}
+        // Global
+    let allAttendanceRecords = [];
 
-// --- Helper untuk ambil subkelas sesuai main kelas (1 Umar, 1 Bilal, dst) ---
-function getUniqueSubClasses(selectedClassNumber) {
-    // Hanya subkelas: harus mengandung angka dan kata (misal: 1 Umar)
-    const regex = new RegExp('^' + selectedClassNumber + '\\s*[a-zA-Z]', 'i');
-    const subClasses = studentsData
-        .map(s => (s.kelas || s.class || s.Kelas || s.Class || s['Kelas'] || s['kelas'] || s['class'] || s['Class'] || ''))
-        .map(k => String(k).trim())
-        .filter(kelas => regex.test(kelas))
-        .filter((v, i, a) => v && a.indexOf(v) === i)
-        .sort((a, b) => a.localeCompare(b));
-    return subClasses;
-}
-
-// --- Isi opsi filter kelas utama secara dinamis saat data siswa sudah dimuat ---
-function populateClassFilterOptions() {
-    const classSelect = document.getElementById('filterClass');
-    // Reset, sisakan "Semua Kelas"
-    classSelect.innerHTML = '<option value="">Semua Kelas</option>';
-    const classes = getMainClasses();
-    classes.forEach(cls => {
-        classSelect.innerHTML += `<option value="${cls}">Kelas ${cls}</option>`;
-    });
-}
-
-// --- Event handler saat filter kelas utama berubah ---
-function onClassFilterChange() {
-    const selectedClass = document.getElementById('filterClass').value;
-    const subClassDropdown = document.getElementById('filterSubClass');
-    if (selectedClass) {
-        const subClasses = getUniqueSubClasses(selectedClass);
-        subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
-        if (subClasses.length > 0) {
-            subClasses.forEach(sub => {
-                subClassDropdown.innerHTML += `<option value="${sub}">${sub}</option>`;
-            });
-            subClassDropdown.disabled = false;
-        } else {
-            subClassDropdown.disabled = true;
-        }
-    } else {
-        subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
-        subClassDropdown.disabled = true;
-    }
-    filterAttendanceData();
-}
-
-// --- Modifikasi utama filterAttendanceData agar sesuai filter baru ---
-function filterAttendanceData() {
-    const teacherFilter = document.getElementById('filterTeacher').value;
-    const classFilter = document.getElementById('filterClass').value;
-    const subClassFilter = (document.getElementById('filterSubClass') || {}).value || '';
-    const monthFilter = document.getElementById('filterMonth').value;
-
-    let filteredRecords = allAttendanceRecords;
-
-    if (teacherFilter) {
-        filteredRecords = filteredRecords.filter(record => record.teacher === teacherFilter);
-    }
-
-    if (classFilter) {
-        if (subClassFilter) {
-            // Jika subkelas dipilih, filter exact subkelas (misal: "1 Umar")
-            filteredRecords = filteredRecords.filter(record => record.class === subClassFilter);
-        } else {
-            // Jika tidak, filter awalan angka kelas saja (semua subkelas & "1")
-            filteredRecords = filteredRecords.filter(record =>
-                String(record.class).toLowerCase().startsWith(classFilter.toLowerCase())
-            );
-        }
-    }
-
-    if (monthFilter) {
-        const [filterYear, filterMonth] = monthFilter.split('-');
-        filteredRecords = filteredRecords.filter(record => {
-            const recordDate = new Date(record.timestamp);
-            const recordYear = recordDate.getFullYear();
-            const recordMonth = recordDate.getMonth() + 1;
-            return recordYear == filterYear && recordMonth == filterMonth;
+    // --- CSV to JSON helper ---
+    function parseCSV(csvText) {
+        // Expect order: Tanggal, Guru, Nama Siswa, Kelas, Kehadiran, Catatan
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.replace(/(^"|"$)/g, '').trim());
+        return lines.slice(1).map(line => {
+            // split with care for quoted fields
+            const values = [];
+            let value = '', inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"' && line[i+1] === '"') {
+                    value += '"'; i++; // escaped double quote
+                } else if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(value); value = '';
+                } else {
+                    value += char;
+                }
+            }
+            values.push(value);
+            // Hardcode expected field mapping per order
+            return {
+                'Tanggal': values[0]?.trim() || '',
+                'Guru': values[1]?.trim() || '',
+                'Nama Siswa': values[2]?.trim() || '',
+                'Kelas': values[3]?.trim() || '',
+                'Kehadiran': values[4]?.trim() || '',
+                'Catatan': values[5]?.trim() || ''
+            };
         });
     }
 
-    // --- Lanjutkan update statistik, grid, tabel dsb ---
-    // (kode Anda sebelumnya)
-    updateStatistics(filteredRecords);
-    updateAttendanceTable(filteredRecords);
-    // Auto tampilkan rekap bulanan jika filter lengkap
-    const monthlyGridTable = document.getElementById('monthlyGridTable');
-    if (teacherFilter && classFilter && monthFilter) {
-        monthlyGridTable.classList.remove('hidden');
-        // gunakan subClassFilter jika ada, jika tidak pakai classFilter (untuk grid bulanan)
-        generateMonthlyGrid(filteredRecords, teacherFilter, subClassFilter || classFilter, monthFilter);
-    } else {
-        monthlyGridTable.classList.add('hidden');
+    // --- Load Data Rekap Absen dari CSV Google Sheets ---
+    function loadAttendanceFromCSV(showAlertSuccess) {
+        const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQY52eT36lLpftANVU2IKXdTKZ8RfGhJ9rmIG_OGp_nlnBb3hA1ryJmznw8NaS9mYWtXNK8X8wlX2Jd/pub?output=csv';
+        fetch(url)
+            .then(res => res.text())
+            .then(csv => {
+                allAttendanceRecords = parseCSV(csv);
+                populateClassFilterOptions();
+                populateTeacherFilterOptions();
+                filterAttendanceData();
+                if (showAlertSuccess) alert('Data berhasil di-refresh');
+            }).catch(e => {
+                alert('Gagal mengambil data dari Google Sheets');
+                console.error(e);
+            });
     }
-}
 
-// --- Inisialisasi filter kelas utama saat data siswa sudah dimuat ---
-window.addEventListener('load', function() {
-    setTimeout(populateClassFilterOptions, 1000); // beri delay jika loadStudentsData async
-});
+    // --- Helper: filter kelas utama (angka saja) dari rekap absen ---
+    function getMainClassesFromRekap() {
+        // regex: hanya angka saja (tanpa huruf/karakter lain)
+        const mainClasses = allAttendanceRecords
+            .map(r => r.Kelas)
+            .filter(k => /^\d+$/.test(k))
+            .filter((v, i, a) => v && a.indexOf(v) === i)
+            .sort((a, b) => a - b);
+        return mainClasses;
+    }
+
+    // --- Helper: subkelas (angka dan kata/huruf) dari rekap absen sesuai kelas utama ---
+    function getSubClassesFromRekap(selectedClassNumber) {
+        // regex: angka + spasi + huruf/karakter (bukan hanya angka)
+        const regex = new RegExp('^' + selectedClassNumber + '\\s*[a-zA-Z]', 'i');
+        const subClasses = allAttendanceRecords
+            .map(r => r.Kelas)
+            .filter(kelas => regex.test(kelas))
+            .filter((v, i, a) => v && a.indexOf(v) === i)
+            .sort((a, b) => a.localeCompare(b));
+        return subClasses;
+    }
+
+    // --- Isi opsi filter kelas utama dari data rekap absen ---
+    function populateClassFilterOptions() {
+        const classSelect = document.getElementById('filterClass');
+        classSelect.innerHTML = '<option value="">Semua Kelas</option>';
+        const classes = getMainClassesFromRekap();
+        classes.forEach(cls => {
+            classSelect.innerHTML += `<option value="${cls}">Kelas ${cls}</option>`;
+        });
+    }
+
+    // --- Isi opsi guru dari data rekap absen ---
+    function populateTeacherFilterOptions() {
+        const teacherSelect = document.getElementById('filterTeacher');
+        teacherSelect.innerHTML = '<option value="">Semua Guru</option>';
+        const teachers = allAttendanceRecords
+            .map(r => r.Guru)
+            .filter((v, i, a) => v && a.indexOf(v) === i)
+            .sort((a, b) => a.localeCompare(b));
+        teachers.forEach(guru => {
+            teacherSelect.innerHTML += `<option value="${guru}">${guru}</option>`;
+        });
+    }
+
+    // --- Event handler saat filter kelas utama berubah ---
+    function onClassFilterChange() {
+        const selectedClass = document.getElementById('filterClass').value;
+        const subClassDropdown = document.getElementById('filterSubClass');
+        if (selectedClass) {
+            const subClasses = getSubClassesFromRekap(selectedClass);
+            subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
+            if (subClasses.length > 0) {
+                subClasses.forEach(sub => {
+                    subClassDropdown.innerHTML += `<option value="${sub}">${sub}</option>`;
+                });
+                subClassDropdown.disabled = false;
+            } else {
+                subClassDropdown.disabled = true;
+            }
+        } else {
+            subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
+            subClassDropdown.disabled = true;
+        }
+        filterAttendanceData();
+    }
+
+    // --- Filter dan update tampilan sesuai filter baru ---
+    function filterAttendanceData() {
+        const teacherFilter = document.getElementById('filterTeacher').value;
+        const classFilter = document.getElementById('filterClass').value;
+        const subClassFilter = document.getElementById('filterSubClass').value;
+        const monthFilter = document.getElementById('filterMonth').value;
+
+        let filteredRecords = allAttendanceRecords;
+
+        if (teacherFilter) {
+            filteredRecords = filteredRecords.filter(record =>
+                record.Guru === teacherFilter
+            );
+        }
+        if (classFilter) {
+            if (subClassFilter) {
+                filteredRecords = filteredRecords.filter(record =>
+                    record.Kelas === subClassFilter
+                );
+            } else {
+                filteredRecords = filteredRecords.filter(record =>
+                    record.Kelas === classFilter || record.Kelas.toLowerCase().startsWith(classFilter.toLowerCase() + ' ')
+                );
+            }
+        }
+        if (monthFilter) {
+            const [filterYear, filterMonth] = monthFilter.split('-');
+            filteredRecords = filteredRecords.filter(record => {
+                // Format: dd/mm/yyyy
+                let [d, m, y] = record.Tanggal.split('/');
+                if (!(d && m && y)) return false;
+                return y == filterYear && m == filterMonth;
+            });
+        }
+        updateStatistics(filteredRecords);
+        updateAttendanceTable(filteredRecords);
+    }
+
+    // --- Statistik dan update tabel ---
+    function updateStatistics(records) {
+        document.getElementById('totalHadir').textContent = records.filter(r => r.Kehadiran.toLowerCase() === 'hadir').length;
+        document.getElementById('totalSakit').textContent = records.filter(r => r.Kehadiran.toLowerCase() === 'sakit').length;
+        document.getElementById('totalIzin').textContent = records.filter(r => r.Kehadiran.toLowerCase() === 'izin').length;
+        document.getElementById('totalAlpha').textContent = records.filter(r => ['alpha', '-'].includes(r.Kehadiran.toLowerCase())).length;
+    }
+
+    function updateAttendanceTable(records) {
+        const tableBody = document.getElementById('attendanceTableBody');
+        const noDataMessage = document.getElementById('noDataMessage');
+        if (records.length === 0) {
+            tableBody.innerHTML = '';
+            noDataMessage.classList.remove('hidden');
+            return;
+        }
+        noDataMessage.classList.add('hidden');
+        tableBody.innerHTML = records.map((record, idx) => `
+            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${idx + 1}</td>
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-900">${record['Nama Siswa']}</td>
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Kelas}</td>
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Guru}</td>
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium">${record.Kehadiran}</td>
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Catatan}</td>
+                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Tanggal}</td>
+            </tr>
+        `).join('');
+    }
+
+    // --- Inisialisasi setelah halaman siap ---
+    window.addEventListener('load', function() {
+        loadAttendanceFromCSV();
+    });
         
         // Helper function to parse CSV line properly
         function parseCSVLine(line) {
