@@ -1437,29 +1437,13 @@
             
             monthDates.forEach(date => {
                 headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[30px]">${date}</th>`;
+		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Hadir</th>`;
+  		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Sakit</th>`;
+		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Izin</th>`;
+		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Alpha</th>`;
+		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[70px]">% Hadir</th>`;
             });
-
-// Total dan persentase
-const totalDays = daysInMonth;
-const percentage = ((countH / totalDays) * 100).toFixed(1);
-
-bodyHTML += `
-    <td class="px-2 py-2 text-center text-xs text-green-600 font-bold">${countH}</td>
-    <td class="px-2 py-2 text-center text-xs text-yellow-600 font-bold">${countS}</td>
-    <td class="px-2 py-2 text-center text-xs text-blue-600 font-bold">${countI}</td>
-    <td class="px-2 py-2 text-center text-xs text-red-600 font-bold">${countA}</td>
-    <td class="px-2 py-2 text-center text-xs text-purple-600 font-bold">${percentage}%</td>
-`;
-
-// Tambahan kolom total kehadiran dan persentase
-headerHTML += `
-    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">H</th>
-    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">S</th>
-    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">I</th>
-    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">A</th>
-    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[80px]">%</th>
-`;
-    
+            
             headerHTML += '</tr></thead>';
             
             // Create table body
@@ -1467,7 +1451,7 @@ headerHTML += `
             
             studentsForClass.forEach((student, index) => {
                 const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
-                
+                let totalHadir = 0, totalSakit = 0, totalIzin = 0, totalAlpha = 0;
                 bodyHTML += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
                 bodyHTML += `<td class="px-2 py-2 text-xs font-medium text-gray-900 sticky left-0 bg-white border-r border-gray-200">${studentName}</td>`;
                 
@@ -1558,11 +1542,6 @@ headerHTML += `
                     }
                     
                     let statusSymbol = '';
-let countH = 0;
-let countS = 0;
-let countI = 0;
-let countA = 0;
-
                     let cellClass = 'px-1 py-2 text-center text-xs font-semibold';
                     
                     if (attendanceRecord) {
@@ -1573,37 +1552,48 @@ let countA = 0;
                             case 'hadir':
                                 statusSymbol = 'H';
                                 cellClass += ' text-green-600 bg-green-50';
-				countH++;
+				totalHadir++;
                                 break;
                             case 'sakit':
-                                statusSymbol = 'S';
-                                cellClass += ' text-yellow-600 bg-yellow-50';
-				countS++;
+                    		statusSymbol = 'S';
+                   		cellClass += ' text-yellow-600 bg-yellow-50';
+                    		totalSakit++;
                                 break;
                             case 'izin':
                                 statusSymbol = 'I';
                                 cellClass += ' text-blue-600 bg-blue-50';
-				countI++;
+				totalIzin++;
                                 break;
                             case 'alpha':
                             case '-':
                                 statusSymbol = '-';
                                 cellClass += ' text-red-600 bg-red-50';
-				countA++;
+				totalAlpha++;
                                 break;
                             default:
                                 statusSymbol = '';
                                 cellClass += ' text-gray-400 bg-gray-50';
+				totalAlpha++;
                         }
                     } else {
                         // No record for this date - empty cell
                         statusSymbol = '';
                         cellClass += ' text-gray-300 bg-gray-50';
+			totalAlpha++;
                     }
                     
                     bodyHTML += `<td class="${cellClass}">${statusSymbol}</td>`;
                 });
-                
+
+		let totalHari = daysInMonth;
+    		let persentaseHadir = ((totalHadir / totalHari) * 100).toFixed(0);
+
+    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-green-600">${totalHadir}</td>`;
+   		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-yellow-600">${totalSakit}</td>`;
+    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-blue-600">${totalIzin}</td>`;
+    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-red-600">${totalAlpha}</td>`;
+    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-purple-600">${persentaseHadir}%</td>`;
+    		bodyHTML += '</tr>';
                 bodyHTML += '</tr>';
             });
             
