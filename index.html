@@ -815,10 +815,18 @@
                              student['nama guru'] || student['Nama Guru'] || student['NAMA GURU'] ||
                              student[''] || student[' '] || student['guru '] || student[' guru'];
 
-        // Awalan saja, agar 1 cocok dengan 1A, 1B, dst
         const classMatch = String(studentClass).trim().toLowerCase().startsWith(String(selectedClass).trim().toLowerCase());
         const teacherMatch = String(studentTeacher).trim() === String(selectedTeacher).trim();
         return classMatch && teacherMatch;
+    });
+
+    // Sort by nama siswa (A-Z)
+    filteredStudents.sort((a, b) => {
+        const nameA = (a['nama siswa'] || a.nama || a.name || a.Nama || a.Name || '').toLowerCase();
+        const nameB = (b['nama siswa'] || b.nama || b.name || b.Nama || b.Name || '').toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
     });
 
     if (filteredStudents.length === 0) {
@@ -836,8 +844,6 @@
         const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
         const studentClass = student.kelas || student.class || student.Kelas || student.Class ||
                              student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
-
-        // Gunakan studentClass untuk label
         const studentId = `student_${studentName.replace(/\s+/g, '_')}_${studentClass}_${selectedTeacher.replace(/\s+/g, '_')}`;
         const isAlreadySaved = isAttendanceSavedToday(studentId);
         const disabledClass = isAlreadySaved ? 'opacity-50 pointer-events-none' : '';
@@ -853,7 +859,7 @@
                     </div>
                     <div>
                         <h4 class="font-semibold text-gray-800 text-sm sm:text-base">${studentName}</h4>
-                        <p class="text-xs sm:text-sm text-gray-500">Kelas ${studentClass}</p>
+                        <p class="text-xs sm:text-sm text-gray-500">${studentClass}</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 sm:flex sm:space-x-2 gap-2 sm:gap-0">
@@ -894,7 +900,7 @@
         `;
         container.appendChild(studentCard);
 
-        // Init attendanceData
+        // Initialize attendance data
         attendanceData[studentId] = {
             name: studentName,
             status: null,
