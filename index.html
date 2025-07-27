@@ -825,7 +825,7 @@
                 console.log('Student:', student['nama siswa'] || student.nama || student.name, 'Class:', studentClass, 'Teacher:', studentTeacher); // Debug log
                 
                 // Convert to string and compare
-                const classMatch = String(studentClass).trim() === String(selectedClass).trim();
+                const classMatch = String(studentClass).trim().toLowerCase().startsWith(String(selectedClass).trim().toLowerCase());
                 const teacherMatch = String(studentTeacher).trim() === String(selectedTeacher).trim();
                 
                 return classMatch && teacherMatch;
@@ -868,7 +868,7 @@
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-800 text-sm sm:text-base">${studentName}</h4>
-                                <p class="text-xs sm:text-sm text-gray-500">Kelas ${selectedClass}</p>
+                                <p class="text-xs sm:text-sm text-gray-500">Kelas ${studentClass}</p>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 sm:flex sm:space-x-2 gap-2 sm:gap-0">
