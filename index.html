@@ -1391,97 +1391,144 @@
         }
         
         function generateMonthlyGrid(records, teacher, classNum, monthFilter) {
-    const monthlyTable = document.getElementById('monthlyAttendanceTable');
-    const monthlyTableInfo = document.getElementById('monthlyTableInfo');
-    monthlyTableInfo.textContent = `${teacher} - Kelas ${classNum}`;
-
-    const [year, month] = monthFilter.split('-');
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const monthDates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-    const studentsForClass = studentsData.filter(student => {
-        const studentClass = student.kelas || student.class || student['Kelas'];
-        const studentTeacher = student['nama guru'] || student.teacher || student['Guru'];
-        return String(studentClass).trim() === String(classNum).trim() &&
-               String(studentTeacher).trim() === String(teacher).trim();
-    });
-
-    let headerHTML = '<thead><tr class="bg-gray-50">';
-    headerHTML += '<th class="px-2 py-3 text-left text-xs font-semibold text-gray-700 sticky left-0 bg-gray-50 min-w-[120px]">Nama Siswa</th>';
-    monthDates.forEach(date => {
-        headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[30px]">${date}</th>`;
-    });
-    headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">%</th>`;
-    headerHTML += '</tr></thead>';
-
-    let bodyHTML = '<tbody>';
-    studentsForClass.forEach((student, index) => {
-        const studentName = student['nama siswa'] || student.nama || `Siswa ${index + 1}`;
-        bodyHTML += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
-        bodyHTML += `<td class="px-2 py-2 text-xs font-medium text-gray-900 sticky left-0 bg-white border-r border-gray-200">${studentName}</td>`;
-
-        let totalHadir = 0;
-        let totalHariIsi = 0;
-
-        monthDates.forEach(date => {
-            const paddedDate = String(date).padStart(2, '0');
-            const paddedMonth = String(month).padStart(2, '0');
-            const dateFormats = [
-                `${paddedDate}/${paddedMonth}/${year}`,
-                `${date}/${month}/${year}`,
-                `${paddedDate}-${paddedMonth}-${year}`,
-                `${year}-${paddedMonth}-${paddedDate}`
-            ];
-
-            let attendanceRecord = null;
-
-            for (const format of dateFormats) {
-                attendanceRecord = records.find(r => r.studentName === studentName && r.date === format);
-                if (attendanceRecord) break;
+            const monthlyTable = document.getElementById('monthlyAttendanceTable');
+            const monthlyTableInfo = document.getElementById('monthlyTableInfo');
+            
+            // Update table info
+            monthlyTableInfo.textContent = `${teacher} - Kelas ${classNum}`;
+            
+            console.log('Generating monthly grid for:', { teacher, classNum, monthFilter });
+            console.log('Available records:', records);
+            
+            // Get students for this teacher and class
+            const studentsForClass = studentsData.filter(student => {
+                const studentClass = student.kelas || student.class || student.Kelas || student.Class || 
+                                   student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
+                const studentTeacher = student.guru || student.teacher || student.Guru || student.Teacher || 
+                                     student['Guru'] || student['guru'] || student['teacher'] || student['Teacher'] ||
+                                     student['nama guru'] || student['Nama Guru'] || student['NAMA GURU'] ||
+                                     student[''] || student[' '] || student['guru '] || student[' guru'];
+                
+                const classMatch = String(studentClass).trim() === String(classNum).trim();
+                const teacherMatch = String(studentTeacher).trim() === String(teacher).trim();
+                
+                return classMatch && teacherMatch;
+            });
+            
+            console.log('Students for class:', studentsForClass);
+            
+            if (studentsForClass.length === 0) {
+                monthlyTable.innerHTML = '<tr><td class="text-center py-8 text-gray-500">Tidak ada data siswa untuk kelas ini</td></tr>';
+                return;
             }
-
-            if (!attendanceRecord) {
-                attendanceRecord = records.find(r => {
-                    if (r.studentName !== studentName) return false;
-                    const d = new Date(r.date);
-                    return d.getDate() === date && d.getMonth() + 1 === parseInt(month) && d.getFullYear() === parseInt(year);
-                });
+            
+            // Get days in the selected month
+            const [year, month] = monthFilter.split('-');
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const monthDates = [];
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                monthDates.push(day);
             }
+            
+            // Create table header
+            let headerHTML = '<thead><tr class="bg-gray-50">';
+            headerHTML += '<th class="px-2 py-3 text-left text-xs font-semibold text-gray-700 sticky left-0 bg-gray-50 min-w-[120px]">Nama Siswa</th>';
+            
+            monthDates.forEach(date => {
+                headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[30px]">${date}</th>`;
+            });
 
-            let statusSymbol = '';
-            let cellClass = 'px-1 py-2 text-center text-xs font-semibold';
+// Total dan persentase
+const totalDays = daysInMonth;
+const percentage = ((countH / totalDays) * 100).toFixed(1);
 
-            if (attendanceRecord) {
-                totalHariIsi++;
-                const status = attendanceRecord.status.toLowerCase();
-                if (status === 'hadir') {
-                    statusSymbol = 'H';
-                    totalHadir++;
-                    cellClass += ' text-green-600 bg-green-50';
-                } else if (status === 'sakit') {
-                    statusSymbol = 'S';
-                    cellClass += ' text-yellow-600 bg-yellow-50';
-                } else if (status === 'izin') {
-                    statusSymbol = 'I';
-                    cellClass += ' text-blue-600 bg-blue-50';
-                } else {
-                    statusSymbol = '-';
-                    cellClass += ' text-red-600 bg-red-50';
-                }
-            } else {
-                cellClass += ' text-gray-300 bg-gray-50';
-            }
+bodyHTML += `
+    <td class="px-2 py-2 text-center text-xs text-green-600 font-bold">${countH}</td>
+    <td class="px-2 py-2 text-center text-xs text-yellow-600 font-bold">${countS}</td>
+    <td class="px-2 py-2 text-center text-xs text-blue-600 font-bold">${countI}</td>
+    <td class="px-2 py-2 text-center text-xs text-red-600 font-bold">${countA}</td>
+    <td class="px-2 py-2 text-center text-xs text-purple-600 font-bold">${percentage}%</td>
+`;
 
-            bodyHTML += `<td class="${cellClass}">${statusSymbol}</td>`;
-        });
-
-        const persen = totalHariIsi > 0 ? Math.round((totalHadir / totalHariIsi) * 100) : 0;
-        bodyHTML += `<td class="px-1 py-2 text-center text-xs font-semibold text-purple-700 bg-white">${persen}%</td>`;
-        bodyHTML += '</tr>';
-    });
-    bodyHTML += '</tbody>';
-    monthlyTable.innerHTML = headerHTML + bodyHTML;
-} else if (record.date.includes('-')) {
+// Tambahan kolom total kehadiran dan persentase
+headerHTML += `
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">H</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">S</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">I</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[60px]">A</th>
+    <th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[80px]">%</th>
+`;
+    
+            headerHTML += '</tr></thead>';
+            
+            // Create table body
+            let bodyHTML = '<tbody>';
+            
+            studentsForClass.forEach((student, index) => {
+                const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
+                
+                bodyHTML += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
+                bodyHTML += `<td class="px-2 py-2 text-xs font-medium text-gray-900 sticky left-0 bg-white border-r border-gray-200">${studentName}</td>`;
+                
+                // For each date in the month, check attendance from the same data source as regular table
+                monthDates.forEach(date => {
+                    // Create multiple date format variations to match different possible formats
+                    const paddedDate = String(date).padStart(2, '0');
+                    const paddedMonth = String(month).padStart(2, '0');
+                    
+                    // Indonesian date formats (DD/MM/YYYY)
+                    const dateFormats = [
+                        `${paddedDate}/${paddedMonth}/${year}`,
+                        `${date}/${month}/${year}`,
+                        `${paddedDate}/${month}/${year}`,
+                        `${date}/${paddedMonth}/${year}`,
+                        // Also try with different separators
+                        `${paddedDate}-${paddedMonth}-${year}`,
+                        `${date}-${month}-${year}`,
+                        // ISO format
+                        `${year}-${paddedMonth}-${paddedDate}`,
+                        // US format
+                        `${paddedMonth}/${paddedDate}/${year}`,
+                        `${month}/${date}/${year}`
+                    ];
+                    
+                    console.log(`Checking date ${date} for student ${studentName}, trying formats:`, dateFormats);
+                    
+                    // Find attendance record using multiple date format attempts
+                    let attendanceRecord = null;
+                    
+                    for (const dateFormat of dateFormats) {
+                        attendanceRecord = records.find(record => {
+                            const nameMatch = record.studentName === studentName;
+                            const dateMatch = record.date === dateFormat;
+                            
+                            if (nameMatch && dateMatch) {
+                                console.log(`Found match for ${studentName} on ${dateFormat}:`, record);
+                            }
+                            
+                            return nameMatch && dateMatch;
+                        });
+                        
+                        if (attendanceRecord) break;
+                    }
+                    
+                    // Also try to parse the record date and compare
+                    if (!attendanceRecord) {
+                        attendanceRecord = records.find(record => {
+                            if (record.studentName !== studentName) return false;
+                            
+                            // Try to parse the record date
+                            let recordDate;
+                            try {
+                                // Handle Indonesian date format DD/MM/YYYY
+                                if (record.date.includes('/')) {
+                                    const parts = record.date.split('/');
+                                    if (parts.length === 3) {
+                                        // Assume DD/MM/YYYY format
+                                        recordDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                                    }
+                                } else if (record.date.includes('-')) {
                                     recordDate = new Date(record.date);
                                 } else {
                                     recordDate = new Date(record.date);
@@ -1511,6 +1558,11 @@
                     }
                     
                     let statusSymbol = '';
+let countH = 0;
+let countS = 0;
+let countI = 0;
+let countA = 0;
+
                     let cellClass = 'px-1 py-2 text-center text-xs font-semibold';
                     
                     if (attendanceRecord) {
@@ -1521,19 +1573,23 @@
                             case 'hadir':
                                 statusSymbol = 'H';
                                 cellClass += ' text-green-600 bg-green-50';
+				countH++;
                                 break;
                             case 'sakit':
                                 statusSymbol = 'S';
                                 cellClass += ' text-yellow-600 bg-yellow-50';
+				countS++;
                                 break;
                             case 'izin':
                                 statusSymbol = 'I';
                                 cellClass += ' text-blue-600 bg-blue-50';
+				countI++;
                                 break;
                             case 'alpha':
                             case '-':
                                 statusSymbol = '-';
                                 cellClass += ' text-red-600 bg-red-50';
+				countA++;
                                 break;
                             default:
                                 statusSymbol = '';
@@ -2094,30 +2150,7 @@
                                 <br>
                                 <button onclick="document.getElementById('csvData').select(); document.execCommand('copy'); alert('Data berhasil dicopy ke clipboard!');">📋 Copy ke Clipboard</button>
                                 <button onclick="window.close()">❌ Tutup</button>
-                            
-<script>
-  function showLoginModal() {
-    const modal = document.getElementById('loginModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => modal.classList.add('show'), 10);
-  }
-
-  function hideLoginModal() {
-    const modal = document.getElementById('loginModal');
-    modal.classList.remove('show');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-  }
-
-  function handleLogin(guru, kelas) {
-    localStorage.setItem('loggedIn', 'true');
-    localStorage.setItem('selectedGuru', guru);
-    localStorage.setItem('selectedKelas', kelas);
-    window.location.href = `absen.html?guru=${encodeURIComponent(guru)}&kelas=${encodeURIComponent(kelas)}`;
-  }
-</script>
-
-</body>
+                            </body>
                             </html>
                         `);
                         newWindow.document.close();
@@ -2284,30 +2317,7 @@
                             </div>
                         </div>
                     </div>
-                
-<script>
-  function showLoginModal() {
-    const modal = document.getElementById('loginModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => modal.classList.add('show'), 10);
-  }
-
-  function hideLoginModal() {
-    const modal = document.getElementById('loginModal');
-    modal.classList.remove('show');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-  }
-
-  function handleLogin(guru, kelas) {
-    localStorage.setItem('loggedIn', 'true');
-    localStorage.setItem('selectedGuru', guru);
-    localStorage.setItem('selectedKelas', kelas);
-    window.location.href = `absen.html?guru=${encodeURIComponent(guru)}&kelas=${encodeURIComponent(kelas)}`;
-  }
-</script>
-
-</body>
+                </body>
                 </html>
             `;
             
@@ -2340,28 +2350,5 @@
             scheduleAbsentDataCheck();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9644f19c156eb29b',t:'MTc1MzM3NjExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script>
-  function showLoginModal() {
-    const modal = document.getElementById('loginModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => modal.classList.add('show'), 10);
-  }
-
-  function hideLoginModal() {
-    const modal = document.getElementById('loginModal');
-    modal.classList.remove('show');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-  }
-
-  function handleLogin(guru, kelas) {
-    localStorage.setItem('loggedIn', 'true');
-    localStorage.setItem('selectedGuru', guru);
-    localStorage.setItem('selectedKelas', kelas);
-    window.location.href = `absen.html?guru=${encodeURIComponent(guru)}&kelas=${encodeURIComponent(kelas)}`;
-  }
-</script>
-
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9644f19c156eb29b',t:'MTc1MzM3NjExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
