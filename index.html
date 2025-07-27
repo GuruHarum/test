@@ -1391,213 +1391,158 @@
         }
         
         function generateMonthlyGrid(records, teacher, classNum, monthFilter) {
-            const monthlyTable = document.getElementById('monthlyAttendanceTable');
-            const monthlyTableInfo = document.getElementById('monthlyTableInfo');
+    const monthlyTable = document.getElementById('monthlyAttendanceTable');
+    const monthlyTableInfo = document.getElementById('monthlyTableInfo');
+    
+    // Update table info
+    monthlyTableInfo.textContent = `${teacher} - Kelas ${classNum}`;
+    
+    // Get students for this teacher and class
+    const studentsForClass = studentsData.filter(student => {
+        const studentClass = student.kelas || student.class || student.Kelas || student.Class || 
+                           student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
+        const studentTeacher = student.guru || student.teacher || student.Guru || student.Teacher || 
+                             student['Guru'] || student['guru'] || student['teacher'] || student['Teacher'] ||
+                             student['nama guru'] || student['Nama Guru'] || student['NAMA GURU'] ||
+                             student[''] || student[' '] || student['guru '] || student[' guru'];
+        const classMatch = String(studentClass).trim() === String(classNum).trim();
+        const teacherMatch = String(studentTeacher).trim() === String(teacher).trim();
+        return classMatch && teacherMatch;
+    });
+    
+    if (studentsForClass.length === 0) {
+        monthlyTable.innerHTML = '<tr><td class="text-center py-8 text-gray-500">Tidak ada data siswa untuk kelas ini</td></tr>';
+        return;
+    }
+    
+    // Get days in the selected month
+    const [year, month] = monthFilter.split('-');
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const monthDates = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+        monthDates.push(day);
+    }
+    
+    // Create table header
+    let headerHTML = '<thead><tr class="bg-gray-50">';
+    headerHTML += '<th class="px-2 py-3 text-left text-xs font-semibold text-gray-700 sticky left-0 bg-gray-50 min-w-[120px]">Nama Siswa</th>';
+    monthDates.forEach(date => {
+        headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[30px]">${date}</th>`;
+    });
+    // Kolom total rekap per bulan
+    headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Hadir</th>`;
+    headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Sakit</th>`;
+    headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Izin</th>`;
+    headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Alpha</th>`;
+    headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[70px]">% Hadir</th>`;
+    headerHTML += '</tr></thead>';
+    
+    // Create table body
+    let bodyHTML = '<tbody>';
+    studentsForClass.forEach((student, index) => {
+        const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
+        let totalHadir = 0, totalSakit = 0, totalIzin = 0, totalAlpha = 0;
+        bodyHTML += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
+        bodyHTML += `<td class="px-2 py-2 text-xs font-medium text-gray-900 sticky left-0 bg-white border-r border-gray-200">${studentName}</td>`;
+        
+        monthDates.forEach(date => {
+            // Format tanggal yang mungkin digunakan
+            const paddedDate = String(date).padStart(2, '0');
+            const paddedMonth = String(month).padStart(2, '0');
+            const dateFormats = [
+                `${paddedDate}/${paddedMonth}/${year}`,
+                `${date}/${month}/${year}`,
+                `${paddedDate}/${month}/${year}`,
+                `${date}/${paddedMonth}/${year}`,
+                `${paddedDate}-${paddedMonth}-${year}`,
+                `${date}-${month}-${year}`,
+                `${year}-${paddedMonth}-${paddedDate}`,
+                `${paddedMonth}/${paddedDate}/${year}`,
+                `${month}/${date}/${year}`
+            ];
             
-            // Update table info
-            monthlyTableInfo.textContent = `${teacher} - Kelas ${classNum}`;
-            
-            console.log('Generating monthly grid for:', { teacher, classNum, monthFilter });
-            console.log('Available records:', records);
-            
-            // Get students for this teacher and class
-            const studentsForClass = studentsData.filter(student => {
-                const studentClass = student.kelas || student.class || student.Kelas || student.Class || 
-                                   student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
-                const studentTeacher = student.guru || student.teacher || student.Guru || student.Teacher || 
-                                     student['Guru'] || student['guru'] || student['teacher'] || student['Teacher'] ||
-                                     student['nama guru'] || student['Nama Guru'] || student['NAMA GURU'] ||
-                                     student[''] || student[' '] || student['guru '] || student[' guru'];
-                
-                const classMatch = String(studentClass).trim() === String(classNum).trim();
-                const teacherMatch = String(studentTeacher).trim() === String(teacher).trim();
-                
-                return classMatch && teacherMatch;
-            });
-            
-            console.log('Students for class:', studentsForClass);
-            
-            if (studentsForClass.length === 0) {
-                monthlyTable.innerHTML = '<tr><td class="text-center py-8 text-gray-500">Tidak ada data siswa untuk kelas ini</td></tr>';
-                return;
+            let attendanceRecord = null;
+            for (const dateFormat of dateFormats) {
+                attendanceRecord = records.find(record => 
+                    record.studentName === studentName && record.date === dateFormat
+                );
+                if (attendanceRecord) break;
             }
-            
-            // Get days in the selected month
-            const [year, month] = monthFilter.split('-');
-            const daysInMonth = new Date(year, month, 0).getDate();
-            const monthDates = [];
-            
-            for (let day = 1; day <= daysInMonth; day++) {
-                monthDates.push(day);
-            }
-            
-            // Create table header
-            let headerHTML = '<thead><tr class="bg-gray-50">';
-            headerHTML += '<th class="px-2 py-3 text-left text-xs font-semibold text-gray-700 sticky left-0 bg-gray-50 min-w-[120px]">Nama Siswa</th>';
-            
-            monthDates.forEach(date => {
-                headerHTML += `<th class="px-1 py-3 text-center text-xs font-semibold text-gray-700 min-w-[30px]">${date}</th>`;
-		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Hadir</th>`;
-  		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Sakit</th>`;
-		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Izin</th>`;
-		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[50px]">Alpha</th>`;
-		headerHTML += `<th class="px-2 py-3 text-center text-xs font-semibold text-gray-700 min-w-[70px]">% Hadir</th>`;
-            });
-            
-            headerHTML += '</tr></thead>';
-            
-            // Create table body
-            let bodyHTML = '<tbody>';
-            
-            studentsForClass.forEach((student, index) => {
-                const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
-                let totalHadir = 0, totalSakit = 0, totalIzin = 0, totalAlpha = 0;
-                bodyHTML += '<tr class="border-b border-gray-200 hover:bg-gray-50">';
-                bodyHTML += `<td class="px-2 py-2 text-xs font-medium text-gray-900 sticky left-0 bg-white border-r border-gray-200">${studentName}</td>`;
-                
-                // For each date in the month, check attendance from the same data source as regular table
-                monthDates.forEach(date => {
-                    // Create multiple date format variations to match different possible formats
-                    const paddedDate = String(date).padStart(2, '0');
-                    const paddedMonth = String(month).padStart(2, '0');
-                    
-                    // Indonesian date formats (DD/MM/YYYY)
-                    const dateFormats = [
-                        `${paddedDate}/${paddedMonth}/${year}`,
-                        `${date}/${month}/${year}`,
-                        `${paddedDate}/${month}/${year}`,
-                        `${date}/${paddedMonth}/${year}`,
-                        // Also try with different separators
-                        `${paddedDate}-${paddedMonth}-${year}`,
-                        `${date}-${month}-${year}`,
-                        // ISO format
-                        `${year}-${paddedMonth}-${paddedDate}`,
-                        // US format
-                        `${paddedMonth}/${paddedDate}/${year}`,
-                        `${month}/${date}/${year}`
-                    ];
-                    
-                    console.log(`Checking date ${date} for student ${studentName}, trying formats:`, dateFormats);
-                    
-                    // Find attendance record using multiple date format attempts
-                    let attendanceRecord = null;
-                    
-                    for (const dateFormat of dateFormats) {
-                        attendanceRecord = records.find(record => {
-                            const nameMatch = record.studentName === studentName;
-                            const dateMatch = record.date === dateFormat;
-                            
-                            if (nameMatch && dateMatch) {
-                                console.log(`Found match for ${studentName} on ${dateFormat}:`, record);
+            if (!attendanceRecord) {
+                attendanceRecord = records.find(record => {
+                    if (record.studentName !== studentName) return false;
+                    let recordDate;
+                    try {
+                        if (record.date.includes('/')) {
+                            const parts = record.date.split('/');
+                            if (parts.length === 3) {
+                                recordDate = new Date(parts[2], parts[1] - 1, parts[0]);
                             }
-                            
-                            return nameMatch && dateMatch;
-                        });
-                        
-                        if (attendanceRecord) break;
-                    }
-                    
-                    // Also try to parse the record date and compare
-                    if (!attendanceRecord) {
-                        attendanceRecord = records.find(record => {
-                            if (record.studentName !== studentName) return false;
-                            
-                            // Try to parse the record date
-                            let recordDate;
-                            try {
-                                // Handle Indonesian date format DD/MM/YYYY
-                                if (record.date.includes('/')) {
-                                    const parts = record.date.split('/');
-                                    if (parts.length === 3) {
-                                        // Assume DD/MM/YYYY format
-                                        recordDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                                    }
-                                } else if (record.date.includes('-')) {
-                                    recordDate = new Date(record.date);
-                                } else {
-                                    recordDate = new Date(record.date);
-                                }
-                                
-                                if (recordDate && !isNaN(recordDate)) {
-                                    const recordDay = recordDate.getDate();
-                                    const recordMonth = recordDate.getMonth() + 1;
-                                    const recordYear = recordDate.getFullYear();
-                                    
-                                    const match = recordDay === date && 
-                                                recordMonth === parseInt(month) && 
-                                                recordYear === parseInt(year);
-                                    
-                                    if (match) {
-                                        console.log(`Date parsing match for ${studentName} on ${date}:`, record);
-                                    }
-                                    
-                                    return match;
-                                }
-                            } catch (e) {
-                                console.log('Date parsing error:', e);
-                            }
-                            
-                            return false;
-                        });
-                    }
-                    
-                    let statusSymbol = '';
-                    let cellClass = 'px-1 py-2 text-center text-xs font-semibold';
-                    
-                    if (attendanceRecord) {
-                        console.log(`Displaying status for ${studentName} on ${date}:`, attendanceRecord.status);
-                        
-                        // Use the same status mapping as the regular attendance table
-                        switch (attendanceRecord.status.toLowerCase()) {
-                            case 'hadir':
-                                statusSymbol = 'H';
-                                cellClass += ' text-green-600 bg-green-50';
-				totalHadir++;
-                                break;
-                            case 'sakit':
-                    		statusSymbol = 'S';
-                   		cellClass += ' text-yellow-600 bg-yellow-50';
-                    		totalSakit++;
-                                break;
-                            case 'izin':
-                                statusSymbol = 'I';
-                                cellClass += ' text-blue-600 bg-blue-50';
-				totalIzin++;
-                                break;
-                            case 'alpha':
-                            case '-':
-                                statusSymbol = '-';
-                                cellClass += ' text-red-600 bg-red-50';
-				totalAlpha++;
-                                break;
-                            default:
-                                statusSymbol = '';
-                                cellClass += ' text-gray-400 bg-gray-50';
-				totalAlpha++;
+                        } else if (record.date.includes('-')) {
+                            recordDate = new Date(record.date);
+                        } else {
+                            recordDate = new Date(record.date);
                         }
-                    } else {
-                        // No record for this date - empty cell
-                        statusSymbol = '';
-                        cellClass += ' text-gray-300 bg-gray-50';
-			totalAlpha++;
-                    }
-                    
-                    bodyHTML += `<td class="${cellClass}">${statusSymbol}</td>`;
+                        if (recordDate && !isNaN(recordDate)) {
+                            const recordDay = recordDate.getDate();
+                            const recordMonth = recordDate.getMonth() + 1;
+                            const recordYear = recordDate.getFullYear();
+                            return recordDay === date && recordMonth === parseInt(month) && recordYear === parseInt(year);
+                        }
+                    } catch (e) {}
+                    return false;
                 });
-
-		let totalHari = daysInMonth;
-    		let persentaseHadir = ((totalHadir / totalHari) * 100).toFixed(0);
-
-    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-green-600">${totalHadir}</td>`;
-   		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-yellow-600">${totalSakit}</td>`;
-    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-blue-600">${totalIzin}</td>`;
-    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-red-600">${totalAlpha}</td>`;
-    		bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-purple-600">${persentaseHadir}%</td>`;
-    		bodyHTML += '</tr>';
-                bodyHTML += '</tr>';
-            });
+            }
             
-            bodyHTML += '</tbody>';
+            let statusSymbol = '';
+            let cellClass = 'px-1 py-2 text-center text-xs font-semibold';
+            if (attendanceRecord) {
+                switch (attendanceRecord.status.toLowerCase()) {
+                    case 'hadir':
+                        statusSymbol = 'H';
+                        cellClass += ' text-green-600 bg-green-50';
+                        totalHadir++;
+                        break;
+                    case 'sakit':
+                        statusSymbol = 'S';
+                        cellClass += ' text-yellow-600 bg-yellow-50';
+                        totalSakit++;
+                        break;
+                    case 'izin':
+                        statusSymbol = 'I';
+                        cellClass += ' text-blue-600 bg-blue-50';
+                        totalIzin++;
+                        break;
+                    case 'alpha':
+                    case '-':
+                        statusSymbol = '-';
+                        cellClass += ' text-red-600 bg-red-50';
+                        totalAlpha++;
+                        break;
+                    default:
+                        statusSymbol = '';
+                        cellClass += ' text-gray-400 bg-gray-50';
+                        totalAlpha++;
+                }
+            } else {
+                // Tidak ada data, dianggap alpha
+                statusSymbol = '';
+                cellClass += ' text-gray-300 bg-gray-50';
+                totalAlpha++;
+            }
+            bodyHTML += `<td class="${cellClass}">${statusSymbol}</td>`;
+        });
+        
+        let totalHari = daysInMonth;
+        let persentaseHadir = ((totalHadir / totalHari) * 100).toFixed(0);
+        bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-green-600">${totalHadir}</td>`;
+        bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-yellow-600">${totalSakit}</td>`;
+        bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-blue-600">${totalIzin}</td>`;
+        bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-red-600">${totalAlpha}</td>`;
+        bodyHTML += `<td class="px-2 py-2 text-center text-xs font-semibold text-purple-600">${persentaseHadir}%</td>`;
+        bodyHTML += '</tr>';
+    });
+    bodyHTML += '</tbody>';
             
             // Set the complete table HTML
             monthlyTable.innerHTML = headerHTML + bodyHTML;
