@@ -804,121 +804,104 @@
         }
 
         function displayStudents() {
-            const container = document.getElementById('studentsContainer');
-            container.innerHTML = '';
-            
-            console.log('Filtering students for:', { selectedClass, selectedTeacher }); // Debug log
-            console.log('Available students:', studentsData); // Debug log
-            
-            // Filter students based on selected teacher and class with more flexible matching
-            const filteredStudents = studentsData.filter(student => {
-                // Try multiple possible column names for class
-                const studentClass = student.kelas || student.class || student.Kelas || student.Class || 
-                                   student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
-                
-                // Try multiple possible column names for teacher - including 'nama guru'
-                const studentTeacher = student.guru || student.teacher || student.Guru || student.Teacher || 
-                                     student['Guru'] || student['guru'] || student['teacher'] || student['Teacher'] ||
-                                     student['nama guru'] || student['Nama Guru'] || student['NAMA GURU'] ||
-                                     student[''] || student[' '] || student['guru '] || student[' guru'];
-                
-                console.log('Student:', student['nama siswa'] || student.nama || student.name, 'Class:', studentClass, 'Teacher:', studentTeacher); // Debug log
-                
-                // Convert to string and compare
-                const classMatch = String(studentClass).trim().toLowerCase().startsWith(String(selectedClass).trim().toLowerCase());
-                const teacherMatch = String(studentTeacher).trim() === String(selectedTeacher).trim();
-                
-                return classMatch && teacherMatch;
-            });
-            
-            console.log('Filtered students:', filteredStudents); // Debug log
-            
-            if (filteredStudents.length === 0) {
-                // Show debug information
-                container.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-500 text-lg">Tidak ada data siswa untuk Kelas ${selectedClass} - ${selectedTeacher}</p>
-                        <p class="text-gray-400 text-sm mt-2">Total siswa di database: ${studentsData.length}</p>
-                        <p class="text-gray-400 text-sm">Silakan periksa kembali data atau hubungi administrator</p>
-                        <details class="mt-4 text-left">
-                            <summary class="cursor-pointer text-blue-500">Debug Info (klik untuk melihat)</summary>
-                            <pre class="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto">${JSON.stringify(studentsData.slice(0, 3), null, 2)}</pre>
-                        </details>
-                    </div>
-                `;
-                return;
-            }
-            
-            filteredStudents.forEach((student, index) => {
-                const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
-                const studentClass = student.kelas || student.class || student.Kelas || student.Class || 
+    const container = document.getElementById('studentsContainer');
+    container.innerHTML = '';
+
+    const filteredStudents = studentsData.filter(student => {
+        const studentClass = student.kelas || student.class || student.Kelas || student.Class ||
                              student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
-                // Create unique student ID based on name, class, and teacher to prevent conflicts
-                const studentId = `student_${studentName.replace(/\s+/g, '_')}_${selectedClass}_${selectedTeacher.replace(/\s+/g, '_')}`;
-                
-                const isAlreadySaved = isAttendanceSavedToday(studentId);
-                const disabledClass = isAlreadySaved ? 'opacity-50 pointer-events-none' : '';
-                const savedMessage = isAlreadySaved ? '<p class="text-sm text-green-600 font-medium mt-2">✅ Absensi hari ini sudah tersimpan</p>' : '';
-                
-                const studentCard = document.createElement('div');
-                studentCard.className = `bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 ${disabledClass}`;
-                studentCard.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
-                                ${index + 1}
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-800 text-sm sm:text-base">${studentName}</h4>
-                                <p class="text-xs sm:text-sm text-gray-500">Kelas ${studentClass}</p>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 sm:flex sm:space-x-2 gap-2 sm:gap-0">
-                            <button onclick="setAttendance('${studentId}', 'hadir')" 
-                                    class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
-                                    data-student="${studentId}" data-status="hadir" ${isAlreadySaved ? 'disabled' : ''}>
-                                😊 Hadir
-                            </button>
-                            <button onclick="setAttendance('${studentId}', 'sakit')" 
-                                    class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
-                                    data-student="${studentId}" data-status="sakit" ${isAlreadySaved ? 'disabled' : ''}>
-                                🤒 Sakit
-                            </button>
-                            <button onclick="setAttendance('${studentId}', 'izin')" 
-                                    class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
-                                    data-student="${studentId}" data-status="izin" ${isAlreadySaved ? 'disabled' : ''}>
-                                🙏 Izin
-                            </button>
-                            <button onclick="setAttendance('${studentId}', 'alpha')" 
-                                    class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
-                                    data-student="${studentId}" data-status="alpha" ${isAlreadySaved ? 'disabled' : ''}>
-                                ❌ Alpha
-                            </button>
-                        </div>
+        const studentTeacher = student.guru || student.teacher || student.Guru || student.Teacher ||
+                             student['Guru'] || student['guru'] || student['teacher'] || student['Teacher'] ||
+                             student['nama guru'] || student['Nama Guru'] || student['NAMA GURU'] ||
+                             student[''] || student[' '] || student['guru '] || student[' guru'];
+
+        // Awalan saja, agar 1 cocok dengan 1A, 1B, dst
+        const classMatch = String(studentClass).trim().toLowerCase().startsWith(String(selectedClass).trim().toLowerCase());
+        const teacherMatch = String(studentTeacher).trim() === String(selectedTeacher).trim();
+        return classMatch && teacherMatch;
+    });
+
+    if (filteredStudents.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <p class="text-gray-500 text-lg">Tidak ada data siswa untuk Kelas ${selectedClass} - ${selectedTeacher}</p>
+                <p class="text-gray-400 text-sm mt-2">Total siswa di database: ${studentsData.length}</p>
+                <p class="text-gray-400 text-sm">Silakan periksa kembali data atau hubungi administrator</p>
+            </div>
+        `;
+        return;
+    }
+
+    filteredStudents.forEach((student, index) => {
+        const studentName = student['nama siswa'] || student.nama || student.name || student.Nama || student.Name || `Siswa ${index + 1}`;
+        const studentClass = student.kelas || student.class || student.Kelas || student.Class ||
+                             student['Kelas'] || student['kelas'] || student['class'] || student['Class'];
+
+        // Gunakan studentClass untuk label
+        const studentId = `student_${studentName.replace(/\s+/g, '_')}_${studentClass}_${selectedTeacher.replace(/\s+/g, '_')}`;
+        const isAlreadySaved = isAttendanceSavedToday(studentId);
+        const disabledClass = isAlreadySaved ? 'opacity-50 pointer-events-none' : '';
+        const savedMessage = isAlreadySaved ? '<p class="text-sm text-green-600 font-medium mt-2">✅ Absensi hari ini sudah tersimpan</p>' : '';
+
+        const studentCard = document.createElement('div');
+        studentCard.className = `bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 ${disabledClass}`;
+        studentCard.innerHTML = `
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
+                        ${index + 1}
                     </div>
-                    <div class="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                        <input type="text" 
-                               placeholder="Catatan (Halaman yang dibaca ananda) *Wajib diisi kecuali Alpha" 
-                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500"
-                               onchange="setNote('${studentId}', this.value)" ${isAlreadySaved ? 'disabled' : ''}>
-                        <button onclick="saveIndividualAttendance('${studentId}')" 
-                                class="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
-                                id="saveBtn_${studentId}" ${isAlreadySaved ? 'disabled' : 'disabled'}>
-                            ${isAlreadySaved ? '✅ Tersimpan' : '💾 Simpan'}
-                        </button>
+                    <div>
+                        <h4 class="font-semibold text-gray-800 text-sm sm:text-base">${studentName}</h4>
+                        <p class="text-xs sm:text-sm text-gray-500">Kelas ${studentClass}</p>
                     </div>
-                    ${savedMessage}
-                `;
-                
-                container.appendChild(studentCard);
-                
-                // Initialize attendance data
-                attendanceData[studentId] = {
-                    name: studentName,
-                    status: null,
-                    note: ''
-                };
-            });
+                </div>
+                <div class="grid grid-cols-2 sm:flex sm:space-x-2 gap-2 sm:gap-0">
+                    <button onclick="setAttendance('${studentId}', 'hadir')" 
+                            class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
+                            data-student="${studentId}" data-status="hadir" ${isAlreadySaved ? 'disabled' : ''}>
+                        😊 Hadir
+                    </button>
+                    <button onclick="setAttendance('${studentId}', 'sakit')" 
+                            class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
+                            data-student="${studentId}" data-status="sakit" ${isAlreadySaved ? 'disabled' : ''}>
+                        🤒 Sakit
+                    </button>
+                    <button onclick="setAttendance('${studentId}', 'izin')" 
+                            class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
+                            data-student="${studentId}" data-status="izin" ${isAlreadySaved ? 'disabled' : ''}>
+                        🙏 Izin
+                    </button>
+                    <button onclick="setAttendance('${studentId}', 'alpha')" 
+                            class="attendance-btn px-2 sm:px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:scale-105 text-xs sm:text-sm" 
+                            data-student="${studentId}" data-status="alpha" ${isAlreadySaved ? 'disabled' : ''}>
+                        ❌ Alpha
+                    </button>
+                </div>
+            </div>
+            <div class="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <input type="text" 
+                       placeholder="Catatan (Halaman yang dibaca ananda) *Wajib diisi kecuali Alpha" 
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+                       onchange="setNote('${studentId}', this.value)" ${isAlreadySaved ? 'disabled' : ''}>
+                <button onclick="saveIndividualAttendance('${studentId}')" 
+                        class="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                        id="saveBtn_${studentId}" ${isAlreadySaved ? 'disabled' : 'disabled'}>
+                    ${isAlreadySaved ? '✅ Tersimpan' : '💾 Simpan'}
+                </button>
+            </div>
+            ${savedMessage}
+        `;
+        container.appendChild(studentCard);
+
+        // Init attendanceData
+        attendanceData[studentId] = {
+            name: studentName,
+            status: null,
+            note: ''
+        };
+    });
+
             
             // Style attendance buttons
             updateAttendanceButtonStyles();
