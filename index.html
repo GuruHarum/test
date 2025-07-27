@@ -337,42 +337,40 @@
 
             <!-- Filter Section -->
             <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Filter Data</h3>
-        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <button onclick="refreshDataFromGoogleSheets()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2">
-                <span>🔄</span>
-                <span>Refresh Data</span>
-            </button>
-        </div>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">Guru</label>
-            <select id="filterTeacher" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                <option value="">Semua Guru</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
-            <select id="filterClass" onchange="onClassFilterChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                <option value="">Semua Kelas</option>
-                <!-- Opsi kelas utama (1,2,3,...) diisi dinamis di JS -->
-            </select>
-        </div>
-        <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">Sub Kelas</label>
-            <select id="filterSubClass" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base" disabled>
-                <option value="">Semua Sub Kelas</option>
-                <!-- Opsi subkelas diisi dinamis di JS -->
-            </select>
-        </div>
-        <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">Bulan</label>
-            <input type="month" id="filterMonth" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-        </div>
-    </div>
-</div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Filter Data</h3>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button onclick="refreshDataFromGoogleSheets()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2">
+                            <span>🔄</span>
+                            <span>Refresh Data</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Guru</label>
+                        <select id="filterTeacher" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                            <option value="">Semua Guru</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
+                        <select id="filterClass" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                            <option value="">Semua Kelas</option>
+                            <option value="1">Kelas 1</option>
+                            <option value="2">Kelas 2</option>
+                            <option value="3">Kelas 3</option>
+                            <option value="4">Kelas 4</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-1">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Bulan</label>
+                        <input type="month" id="filterMonth" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                    </div>
+                </div>
+            </div>
 
             <!-- Loading Indicator -->
             <div id="loadingIndicator" class="hidden bg-white rounded-xl shadow-lg p-6 mb-6 text-center">
@@ -553,201 +551,6 @@
             }
         }
 
-        // Global
-    let allAttendanceRecords = [];
-
-    // --- CSV to JSON helper ---
-    function parseCSV(csvText) {
-        // Expect order: Tanggal, Guru, Nama Siswa, Kelas, Kehadiran, Catatan
-        const lines = csvText.trim().split('\n');
-        const headers = lines[0].split(',').map(h => h.replace(/(^"|"$)/g, '').trim());
-        return lines.slice(1).map(line => {
-            // split with care for quoted fields
-            const values = [];
-            let value = '', inQuotes = false;
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"' && line[i+1] === '"') {
-                    value += '"'; i++; // escaped double quote
-                } else if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    values.push(value); value = '';
-                } else {
-                    value += char;
-                }
-            }
-            values.push(value);
-            // Hardcode expected field mapping per order
-            return {
-                'Tanggal': values[0]?.trim() || '',
-                'Guru': values[1]?.trim() || '',
-                'Nama Siswa': values[2]?.trim() || '',
-                'Kelas': values[3]?.trim() || '',
-                'Kehadiran': values[4]?.trim() || '',
-                'Catatan': values[5]?.trim() || ''
-            };
-        });
-    }
-
-    // --- Load Data Rekap Absen dari CSV Google Sheets ---
-    function loadAttendanceFromCSV(showAlertSuccess) {
-        const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQY52eT36lLpftANVU2IKXdTKZ8RfGhJ9rmIG_OGp_nlnBb3hA1ryJmznw8NaS9mYWtXNK8X8wlX2Jd/pub?output=csv';
-        fetch(url)
-            .then(res => res.text())
-            .then(csv => {
-                allAttendanceRecords = parseCSV(csv);
-                populateClassFilterOptions();
-                populateTeacherFilterOptions();
-                filterAttendanceData();
-                if (showAlertSuccess) alert('Data berhasil di-refresh');
-            }).catch(e => {
-                alert('Gagal mengambil data dari Google Sheets');
-                console.error(e);
-            });
-    }
-
-    // --- Helper: filter kelas utama (angka saja) dari rekap absen ---
-    function getMainClassesFromRekap() {
-        // regex: hanya angka saja (tanpa huruf/karakter lain)
-        const mainClasses = allAttendanceRecords
-            .map(r => r.Kelas)
-            .filter(k => /^\d+$/.test(k))
-            .filter((v, i, a) => v && a.indexOf(v) === i)
-            .sort((a, b) => a - b);
-        return mainClasses;
-    }
-
-    // --- Helper: subkelas (angka dan kata/huruf) dari rekap absen sesuai kelas utama ---
-    function getSubClassesFromRekap(selectedClassNumber) {
-        // regex: angka + spasi + huruf/karakter (bukan hanya angka)
-        const regex = new RegExp('^' + selectedClassNumber + '\\s*[a-zA-Z]', 'i');
-        const subClasses = allAttendanceRecords
-            .map(r => r.Kelas)
-            .filter(kelas => regex.test(kelas))
-            .filter((v, i, a) => v && a.indexOf(v) === i)
-            .sort((a, b) => a.localeCompare(b));
-        return subClasses;
-    }
-
-    // --- Isi opsi filter kelas utama dari data rekap absen ---
-    function populateClassFilterOptions() {
-        const classSelect = document.getElementById('filterClass');
-        classSelect.innerHTML = '<option value="">Semua Kelas</option>';
-        const classes = getMainClassesFromRekap();
-        classes.forEach(cls => {
-            classSelect.innerHTML += `<option value="${cls}">Kelas ${cls}</option>`;
-        });
-    }
-
-    // --- Isi opsi guru dari data rekap absen ---
-    function populateTeacherFilterOptions() {
-        const teacherSelect = document.getElementById('filterTeacher');
-        teacherSelect.innerHTML = '<option value="">Semua Guru</option>';
-        const teachers = allAttendanceRecords
-            .map(r => r.Guru)
-            .filter((v, i, a) => v && a.indexOf(v) === i)
-            .sort((a, b) => a.localeCompare(b));
-        teachers.forEach(guru => {
-            teacherSelect.innerHTML += `<option value="${guru}">${guru}</option>`;
-        });
-    }
-
-    // --- Event handler saat filter kelas utama berubah ---
-    function onClassFilterChange() {
-        const selectedClass = document.getElementById('filterClass').value;
-        const subClassDropdown = document.getElementById('filterSubClass');
-        if (selectedClass) {
-            const subClasses = getSubClassesFromRekap(selectedClass);
-            subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
-            if (subClasses.length > 0) {
-                subClasses.forEach(sub => {
-                    subClassDropdown.innerHTML += `<option value="${sub}">${sub}</option>`;
-                });
-                subClassDropdown.disabled = false;
-            } else {
-                subClassDropdown.disabled = true;
-            }
-        } else {
-            subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
-            subClassDropdown.disabled = true;
-        }
-        filterAttendanceData();
-    }
-
-    // --- Filter dan update tampilan sesuai filter baru ---
-    function filterAttendanceData() {
-        const teacherFilter = document.getElementById('filterTeacher').value;
-        const classFilter = document.getElementById('filterClass').value;
-        const subClassFilter = document.getElementById('filterSubClass').value;
-        const monthFilter = document.getElementById('filterMonth').value;
-
-        let filteredRecords = allAttendanceRecords;
-
-        if (teacherFilter) {
-            filteredRecords = filteredRecords.filter(record =>
-                record.Guru === teacherFilter
-            );
-        }
-        if (classFilter) {
-            if (subClassFilter) {
-                filteredRecords = filteredRecords.filter(record =>
-                    record.Kelas === subClassFilter
-                );
-            } else {
-                filteredRecords = filteredRecords.filter(record =>
-                    record.Kelas === classFilter || record.Kelas.toLowerCase().startsWith(classFilter.toLowerCase() + ' ')
-                );
-            }
-        }
-        if (monthFilter) {
-            const [filterYear, filterMonth] = monthFilter.split('-');
-            filteredRecords = filteredRecords.filter(record => {
-                // Format: dd/mm/yyyy
-                let [d, m, y] = record.Tanggal.split('/');
-                if (!(d && m && y)) return false;
-                return y == filterYear && m == filterMonth;
-            });
-        }
-        updateStatistics(filteredRecords);
-        updateAttendanceTable(filteredRecords);
-    }
-
-    // --- Statistik dan update tabel ---
-    function updateStatistics(records) {
-        document.getElementById('totalHadir').textContent = records.filter(r => r.Kehadiran.toLowerCase() === 'hadir').length;
-        document.getElementById('totalSakit').textContent = records.filter(r => r.Kehadiran.toLowerCase() === 'sakit').length;
-        document.getElementById('totalIzin').textContent = records.filter(r => r.Kehadiran.toLowerCase() === 'izin').length;
-        document.getElementById('totalAlpha').textContent = records.filter(r => ['alpha', '-'].includes(r.Kehadiran.toLowerCase())).length;
-    }
-
-    function updateAttendanceTable(records) {
-        const tableBody = document.getElementById('attendanceTableBody');
-        const noDataMessage = document.getElementById('noDataMessage');
-        if (records.length === 0) {
-            tableBody.innerHTML = '';
-            noDataMessage.classList.remove('hidden');
-            return;
-        }
-        noDataMessage.classList.add('hidden');
-        tableBody.innerHTML = records.map((record, idx) => `
-            <tr class="border-b border-gray-200 hover:bg-gray-50">
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${idx + 1}</td>
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-900">${record['Nama Siswa']}</td>
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Kelas}</td>
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Guru}</td>
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium">${record.Kehadiran}</td>
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Catatan}</td>
-                <td class="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">${record.Tanggal}</td>
-            </tr>
-        `).join('');
-    }
-
-    // --- Inisialisasi setelah halaman siap ---
-    window.addEventListener('load', function() {
-        loadAttendanceFromCSV();
-    });
-        
         // Helper function to parse CSV line properly
         function parseCSVLine(line) {
             const result = [];
