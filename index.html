@@ -337,46 +337,40 @@
 
             <!-- Filter Section -->
             <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Filter Data</h3>
-        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            <button onclick="refreshDataFromGoogleSheets()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2">
-                <span>🔄</span>
-                <span>Refresh Data</span>
-            </button>
-        </div>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">Guru</label>
-            <select id="filterTeacher" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                <option value="">Semua Guru</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2">Kelas (Angka)</label>
-            <select id="filterClassNumber" onchange="onClassNumberChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                <option value="">Semua Kelas</option>
-                <option value="1">Kelas 1</option>
-                <option value="2">Kelas 2</option>
-                <option value="3">Kelas 3</option>
-                <option value="4">Kelas 4</option>
-                <option value="5">Kelas 5</option>
-                <option value="6">Kelas 6</option>
-            </select>
-        </div>
-        <div id="filterClassWrapper" style="display:none;">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Kelas (Angka dan Kata)</label>
-            <select id="filterClassDetail" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                <option value="">Pilih Kelas (Angka+Kata)</option>
-            </select>
-        </div>
-        <div class="sm:col-span-2 lg:col-span-1">
-            <label class="block text-gray-700 text-sm font-bold mb-2">Bulan</label>
-            <input type="month" id="filterMonth" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-        </div>
-    </div>
-</div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Filter Data</h3>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button onclick="refreshDataFromGoogleSheets()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2">
+                            <span>🔄</span>
+                            <span>Refresh Data</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Guru</label>
+                        <select id="filterTeacher" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                            <option value="">Semua Guru</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
+                        <select id="filterClass" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                            <option value="">Semua Kelas</option>
+                            <option value="1">Kelas 1</option>
+                            <option value="2">Kelas 2</option>
+                            <option value="3">Kelas 3</option>
+                            <option value="4">Kelas 4</option>
+                            <option value="5">Kelas 5</option>
+                            <option value="6">Kelas 6</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-1">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Bulan</label>
+                        <input type="month" id="filterMonth" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                    </div>
+                </div>
+            </div>
 
             <!-- Loading Indicator -->
             <div id="loadingIndicator" class="hidden bg-white rounded-xl shadow-lg p-6 mb-6 text-center">
@@ -1664,12 +1658,9 @@
                 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIfruSjIM_EvdnLqbPg-ghFJNmojuV36CiGgEcYYoIk-9vqBdBpu_ejBZqi-ZmXuts/exec';
                 
                 // Get current filter values
-                const teacherFilter = document.getElementById('filterTeacher')?.value || '';
-                const classNumber = document.getElementById('filterClassNumber')?.value || '';
-                const classDetail = document.getElementById('filterClassDetail')?.value || '';
-                const monthFilter = document.getElementById('filterMonth')?.value || '';
-                // Gunakan classDetail jika ada, else classNumber
-                const classFilter = classDetail || classNumber;
+                const teacherFilter = document.getElementById('filterTeacher').value;
+                const classFilter = document.getElementById('filterClass').value;
+                const monthFilter = document.getElementById('filterMonth').value;
                 
                 // Prepare filtered data for sync
                 let filteredRecords = allAttendanceRecords;
@@ -2284,74 +2275,6 @@
             // Schedule automatic absent data checking
             scheduleAbsentDataCheck();
         });
-    </script>
-    <script>
-function onClassNumberChange() {
-    const classNumber = document.getElementById('filterClassNumber').value;
-    const wrapper = document.getElementById('filterClassWrapper');
-    const classDetailSelect = document.getElementById('filterClassDetail');
-    classDetailSelect.innerHTML = '<option value="">Pilih Kelas (Angka+Kata)</option>';
-    if (classNumber) {
-        wrapper.style.display = '';
-        let kelasAngkaKataSet = new Set();
-        studentsData.forEach(student => {
-            let kelas = student.kelas || student.class || student.Kelas || student.Class || '';
-            kelas = String(kelas).trim();
-            if (
-                kelas.startsWith(classNumber)
-                && kelas.length > classNumber.length
-                && isNaN(Number(kelas))
-            ) {
-                kelasAngkaKataSet.add(kelas);
-            }
-        });
-        Array.from(kelasAngkaKataSet).sort().forEach(kelas => {
-            const option = document.createElement('option');
-            option.value = kelas;
-            option.textContent = kelas;
-            classDetailSelect.appendChild(option);
-        });
-    } else {
-        wrapper.style.display = 'none';
-        classDetailSelect.innerHTML = '<option value="">Pilih Kelas (Angka+Kata)</option>';
-        filterAttendanceData();
-    }
-}
-
-function filterAttendanceData() {
-    const teacherFilter = document.getElementById('filterTeacher').value;
-    const classNumber = document.getElementById('filterClassNumber').value;
-    let classDetail = '';
-    if (document.getElementById('filterClassWrapper').style.display !== 'none') {
-        classDetail = document.getElementById('filterClassDetail').value;
-    }
-    const monthFilter = document.getElementById('filterMonth').value;
-
-    let filteredRecords = allAttendanceRecords;
-
-    if (teacherFilter) {
-        filteredRecords = filteredRecords.filter(record => record.teacher === teacherFilter);
-    }
-    if (classDetail) {
-        filteredRecords = filteredRecords.filter(record => record.class === classDetail);
-    } else if (classNumber) {
-        filteredRecords = filteredRecords.filter(record => String(record.class).trim() === classNumber);
-    }
-
-    if (monthFilter) {
-        const [filterYear, filterMonth] = monthFilter.split('-');
-        filteredRecords = filteredRecords.filter(record => {
-            const recordDate = new Date(record.timestamp);
-            const recordYear = recordDate.getFullYear();
-            const recordMonth = recordDate.getMonth() + 1;
-            return recordYear == filterYear && recordMonth == filterMonth;
-        });
-    }
-
-    updateStatistics(filteredRecords);
-    updateAttendanceTable(filteredRecords);
-    autoSyncAdminData();
-}
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9644f19c156eb29b',t:'MTc1MzM3NjExMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
