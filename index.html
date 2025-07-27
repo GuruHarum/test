@@ -337,40 +337,42 @@
 
             <!-- Filter Section -->
             <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                    <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Filter Data</h3>
-                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                        <button onclick="refreshDataFromGoogleSheets()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2">
-                            <span>🔄</span>
-                            <span>Refresh Data</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Guru</label>
-                        <select id="filterTeacher" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                            <option value="">Semua Guru</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
-                        <select id="filterClass" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                            <option value="">Semua Kelas</option>
-                            <option value="1">Kelas 1</option>
-                            <option value="2">Kelas 2</option>
-                            <option value="3">Kelas 3</option>
-                            <option value="4">Kelas 4</option>
-                            <option value="5">Kelas 5</option>
-                            <option value="6">Kelas 6</option>
-                        </select>
-                    </div>
-                    <div class="sm:col-span-2 lg:col-span-1">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Bulan</label>
-                        <input type="month" id="filterMonth" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
-                    </div>
-                </div>
-            </div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Filter Data</h3>
+        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+            <button onclick="refreshDataFromGoogleSheets()" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm flex items-center space-x-2">
+                <span>🔄</span>
+                <span>Refresh Data</span>
+            </button>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">Guru</label>
+            <select id="filterTeacher" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                <option value="">Semua Guru</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
+            <select id="filterClass" onchange="onClassFilterChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+                <option value="">Semua Kelas</option>
+                <!-- Opsi kelas utama (1,2,3,...) diisi dinamis di JS -->
+            </select>
+        </div>
+        <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">Sub Kelas</label>
+            <select id="filterSubClass" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base" disabled>
+                <option value="">Semua Sub Kelas</option>
+                <!-- Opsi subkelas diisi dinamis di JS -->
+            </select>
+        </div>
+        <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">Bulan</label>
+            <input type="month" id="filterMonth" onchange="filterAttendanceData()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 text-base">
+        </div>
+    </div>
+</div>
 
             <!-- Loading Indicator -->
             <div id="loadingIndicator" class="hidden bg-white rounded-xl shadow-lg p-6 mb-6 text-center">
@@ -503,6 +505,101 @@
         let isLoggedIn = false; // Track login status
         let allAttendanceRecords = []; // Store all attendance records
 
+        // --- Helper untuk mengambil kelas utama (angka saja) ---
+function getMainClasses() {
+    // Ambil kelas dari data siswa, regex: awal angka (misal: "1", "2", "3")
+    const mainClasses = studentsData
+        .map(s => (s.kelas || s.class || s.Kelas || s.Class || s['Kelas'] || s['kelas'] || s['class'] || s['Class'] || ''))
+        .map(k => String(k).trim())
+        .filter(k => /^\d+/.test(k))
+        .map(k => k.match(/^\d+/)[0])
+        .filter((v, i, a) => v && a.indexOf(v) === i)
+        .sort((a, b) => a - b);
+    return mainClasses;
+}
+
+// --- Helper untuk ambil subkelas sesuai main kelas (1 Umar, 1 Bilal, dst) ---
+function getUniqueSubClasses(selectedClassNumber) {
+    // Hanya subkelas: harus mengandung angka dan kata (misal: 1 Umar)
+    const regex = new RegExp('^' + selectedClassNumber + '\\s*[a-zA-Z]', 'i');
+    const subClasses = studentsData
+        .map(s => (s.kelas || s.class || s.Kelas || s.Class || s['Kelas'] || s['kelas'] || s['class'] || s['Class'] || ''))
+        .map(k => String(k).trim())
+        .filter(kelas => regex.test(kelas))
+        .filter((v, i, a) => v && a.indexOf(v) === i)
+        .sort((a, b) => a.localeCompare(b));
+    return subClasses;
+}
+
+// --- Isi opsi filter kelas utama secara dinamis saat data siswa sudah dimuat ---
+function populateClassFilterOptions() {
+    const classSelect = document.getElementById('filterClass');
+    const existing = Array.from(classSelect.options).map(opt => opt.value);
+    // Jangan populate ulang jika sudah terisi
+    if (existing.length > 1) return;
+    const classes = getMainClasses();
+    classes.forEach(cls => {
+        classSelect.innerHTML += `<option value="${cls}">Kelas ${cls}</option>`;
+    });
+}
+
+// --- Event handler saat filter kelas utama berubah ---
+function onClassFilterChange() {
+    const selectedClass = document.getElementById('filterClass').value;
+    const subClassDropdown = document.getElementById('filterSubClass');
+    if (selectedClass) {
+        const subClasses = getUniqueSubClasses(selectedClass);
+        subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
+        if (subClasses.length > 0) {
+            subClasses.forEach(sub => {
+                subClassDropdown.innerHTML += `<option value="${sub}">${sub}</option>`;
+            });
+            subClassDropdown.disabled = false;
+        } else {
+            subClassDropdown.disabled = true;
+        }
+    } else {
+        subClassDropdown.innerHTML = `<option value="">Semua Sub Kelas</option>`;
+        subClassDropdown.disabled = true;
+    }
+    filterAttendanceData();
+}
+
+// --- Modifikasi utama filterAttendanceData agar sesuai filter baru ---
+function filterAttendanceData() {
+    const teacherFilter = document.getElementById('filterTeacher').value;
+    const classFilter = document.getElementById('filterClass').value;
+    const subClassFilter = (document.getElementById('filterSubClass') || {}).value || '';
+    const monthFilter = document.getElementById('filterMonth').value;
+
+    let filteredRecords = allAttendanceRecords;
+
+    if (teacherFilter) {
+        filteredRecords = filteredRecords.filter(record => record.teacher === teacherFilter);
+    }
+
+    if (classFilter) {
+        if (subClassFilter) {
+            // Jika subkelas dipilih, filter exact subkelas (misal: "1 Umar")
+            filteredRecords = filteredRecords.filter(record => record.class === subClassFilter);
+        } else {
+            // Jika tidak, filter awalan angka kelas saja (semua subkelas & "1")
+            filteredRecords = filteredRecords.filter(record =>
+                String(record.class).toLowerCase().startsWith(classFilter.toLowerCase())
+            );
+        }
+    }
+
+    if (monthFilter) {
+        const [filterYear, filterMonth] = monthFilter.split('-');
+        filteredRecords = filteredRecords.filter(record => {
+            const recordDate = new Date(record.timestamp);
+            const recordYear = recordDate.getFullYear();
+            const recordMonth = recordDate.getMonth() + 1;
+            return recordYear == filterYear && recordMonth == filterMonth;
+        });
+    }
+        
         // Load students data from Google Sheets CSV
         async function loadStudentsData() {
             try {
@@ -1364,12 +1461,20 @@
             
             // Show/hide monthly grid table based on filters
             const monthlyGridTable = document.getElementById('monthlyGridTable');
-            if (teacherFilter && classFilter && monthFilter) {
-                monthlyGridTable.classList.remove('hidden');
-                generateMonthlyGrid(filteredRecords, teacherFilter, classFilter, monthFilter);
-            } else {
-                monthlyGridTable.classList.add('hidden');
-            }
+    if (teacherFilter && classFilter && monthFilter) {
+        monthlyGridTable.classList.remove('hidden');
+        // gunakan subClassFilter jika ada, jika tidak pakai classFilter (untuk grid bulanan)
+        generateMonthlyGrid(filteredRecords, teacherFilter, subClassFilter || classFilter, monthFilter);
+    } else {
+        monthlyGridTable.classList.add('hidden');
+    }
+}
+
+// --- Pastikan populateClassFilterOptions dipanggil setelah loadStudentsData selesai ---
+window.addEventListener('load', function() {
+    // Saat data siswa sudah selesai dimuat, inisialisasi filter kelas
+    setTimeout(populateClassFilterOptions, 1000); // beri delay jika loadStudentsData async
+});
             
             // Update statistics
             updateStatistics(filteredRecords);
